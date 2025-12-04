@@ -1,0 +1,19 @@
+1. Patch only (baseline, no ROI)
+
+python caption_mplug.py --config ./configs/caption_mplug_base.yaml --output_dir output/abl_patch --checkpoint C:/mPLUG/mplug_base.pth --do_two_optim --lr 1e-5 --min_length 8 --max_length 25 --max_input_length 25 --device cuda:0 --roi_mode none
+
+
+2. Patch + ROI feats (no boxes)
+
+python caption_mplug.py --config ./configs/caption_mplug_base.yaml --output_dir output/abl_patch_feat --checkpoint C:/mPLUG/mplug_base.pth --do_two_optim --lr 1e-5 --min_length 8 --max_length 25 --max_input_length 25 --device cuda:0 --use_roi --roi_feat_dir C:/mPLUG/img_root/region_feats/up_down_100 --roi_mode feat
+
+
+3. Patch + ROI boxes (no feats)
+
+python caption_mplug.py --config ./configs/caption_mplug_base.yaml --output_dir output/abl_patch_box --checkpoint C:/mPLUG/mplug_base.pth --do_two_optim --lr 1e-5 --min_length 8 --max_length 25 --max_input_length 25 --device cuda:0 --use_roi --roi_box_dir C:/mPLUG/img_root/region_feats/up_down_100_box --roi_mode box
+
+
+4. Patch + ROI feats + ROI boxes (full, original setup)
+
+python caption_mplug.py --config ./configs/caption_mplug_base.yaml --output_dir output/abl_patch_full --checkpoint C:/mPLUG/mplug_base.pth --do_two_optim --lr 1e-5 --min_length 8 --max_length 25 --max_input_length 25 --device cuda:0 --use_roi --roi_feat_dir C:/mPLUG/img_root/region_feats/up_down_100 --roi_box_dir C:/mPLUG/img_root/region_feats/up_down_100_box --roi_mode full
+
