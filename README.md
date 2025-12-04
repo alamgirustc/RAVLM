@@ -9,10 +9,10 @@ This repository contains the official implementation of:
 RAVLM augments a strong patch-based vision–language backbone with **detector-based region features** for image captioning.  
 The model is implemented on top of the **mPLUG** architecture and uses **bottom-up Faster R-CNN region features** generated following the official **Bottom-Up and Top-Down Attention** implementation:
 
-- mPLUG: *mPLUG: Effective and Efficient Vision-Language Learning by Cross-modal Skip-connections*  
-- Bottom-up features: *Bottom-Up and Top-Down Attention for Image Captioning and Visual Question Answering* (GitHub: `peteanderson80/bottom-up-attention`)
+- **mPLUG (official repo):** <https://github.com/X-PLUG/mPLUG>  
+- **Bottom-Up Attention (official repo):** <https://github.com/peteanderson80/bottom-up-attention>  
 
-> 🔗 Code: https://github.com/alamgirustc/RAVLM
+> 🔗 RAVLM code: <https://github.com/alamgirustc/RAVLM>
 
 
 ## Overview
@@ -47,7 +47,7 @@ using the same 14M-image pre-training as mPLUG and identical fine-tuning setting
 
 ## Model Variants
 
-RAVLM is implemented as a small extension to the original mPLUG captioning framework.
+RAVLM is implemented as a small extension to the original **[mPLUG](https://github.com/X-PLUG/mPLUG)** captioning framework.
 
 ### Visual Configurations
 
@@ -66,7 +66,7 @@ We consider the following visual input variants:
    - Project geometry into the hidden space and append as region tokens.
 
 4. **RAVLM (Patch + Faster R-CNN backbone features)**  
-   - Use ViT patch tokens + region tokens derived from Faster R-CNN backbone features (following the bottom-up-attention detector).  
+   - Use ViT patch tokens + region tokens derived from Faster R-CNN backbone features (following the **[bottom-up-attention](https://github.com/peteanderson80/bottom-up-attention)** detector).  
    - No explicit concatenation of ROI appearance + geometry—just clean region descriptors as additional tokens.  
    - This is the **best-performing** configuration and the default RAVLM model.
 
