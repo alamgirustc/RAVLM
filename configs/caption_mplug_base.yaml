@@ -1,0 +1,64 @@
+#train_file: ['C:/mPLUG/data/coco_object/coco_caption_train_ocr.json']
+#val_file: ['C:/mPLUG/data/coco_object/coco_caption_test_ocr.json']
+#test_file: ['C:/mPLUG/data/coco_object/coco_caption_test_ocr.json']
+
+train_file: ['/gdata/Alamgir/mPLUG/data/coco_object/coco_caption_train_ocr.json']
+val_file: ['/gdata/Alamgir/mPLUG/data/coco_object/coco_caption_test_ocr.json']
+test_file: ['/gdata/Alamgir/mPLUG/data/coco_object/coco_caption_test_ocr.json']
+
+# Dataset settings
+read_local_data: True
+#coco_root: 'C:/mPLUG/img_root/coco_2014/'
+coco_root: '/gdata/Alamgir/mPLUG/img_root/coco_2014/'
+
+
+# ✅ ROI feature support
+
+#roi_feat_dir: 'C:/mPLUG/img_root/region_feats/up_down_100'
+#roi_box_dir:  'C:/mPLUG/img_root/region_feats/up_down_100_box'
+
+roi_feat_dir: '/gdata/Alamgir/mscoco/feature/up_down_100'
+roi_box_dir:  '/gdata/Alamgir/mscoco/feature/up_down_100_box'
+
+load_rois: True
+return_rois: True
+
+# Model configs
+bert_config: 'configs/config_bert.json'
+image_res: 384
+vision_width: 768
+clip_name: "ViT-B-16"
+distill: True
+
+# Training
+batch_size_train: 64
+batch_size_test: 64
+k_test: 128
+alpha: 0.4
+warm_up: True
+
+# Tokens
+eos: '[SEP]'
+bos: '[CLS]'
+prompt: ''
+
+# Optimizer
+optimizer: 
+  opt: adamW
+  lr1: 1e-5
+  lr2: 5e-6
+  weight_decay: 0.02
+
+# Scheduler
+schedular: 
+  sched: cosine
+  lr: 1e-5
+  epochs: 30
+  min_lr: 1e-6
+  decay_rate: 1
+  warmup_lr: 1e-5
+  warmup_epochs: 4
+  cooldown_epochs: 0
+
+# Checkpointing
+use_checkpoint: True
