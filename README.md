@@ -49,6 +49,10 @@ Recent image captioning models often rely only on **ViT patch tokens**, ignoring
 - Extra input: **Faster R-CNN** region descriptors as additional visual tokens.  
 - Architecture and pre-training of mPLUG are unchanged; only the **visual tokens** are modified.
 
+<p align="center">
+  <img src="RAVLM_framework.png" alt="RAVLM framework" width="800">
+</p>
+
 ---
 
 ## Method
@@ -62,26 +66,42 @@ We start from the official **mPLUG** captioning setup:
 - Fusion: cross-modal skip-connected Transformer  
 - Decoder: Transformer with **Prefix Language Modeling (PrefixLM)** for caption generation  
 
+We do **not** modify these components; we only change the visual inputs.
+
 ### Region Features and Tokens
 
-We follow **Bottom-Up Attention** to extract **Faster R-CNN** region features:
+We follow **Bottom-Up and Top-Down Attention** to extract **Faster R-CNN** region features:
 
 - Up to *K* regions per image  
 - For each region:
   - ROI appearance feature  
-  - Bounding box (for normalized geometry)  
+  - Bounding box, from which normalized geometry is derived (coordinates, width, height, area)  
   - Optionally, backbone region descriptors  
 
-Region descriptors are projected to the **ViT hidden size** and used as **region tokens**, which are concatenated with patch tokens and fed into the existing fusion network and PrefixLM decoder. Training uses **cross-entropy (XE)** only.
+Each descriptor is projected to the **ViT hidden size** and turned into a **region token**.  
+These **region tokens** are concatenated with ViT patch tokens and passed to the unchanged mPLUG fusion network and PrefixLM decoder.
+
+Training uses standard **cross-entropy (XE)**:
+
+\[
+\mathcal{L}_{\text{CE}} = - \sum_{t=1}^{T} \log p(y_t \mid y_{<t}, I)
+\]
 
 ### Visual Configurations
 
 We evaluate four visual configurations:
 
-1. **Patch-only (baseline)** – original mPLUG captioning (ViT patches only)  
-2. **Full ROI (features + boxes)** – concatenated appearance + geometry per region  
-3. **Geometry-only ROI** – normalized boxes and simple geometric attributes only  
-4. **RAVLM (Patch + Faster R-CNN features)** – ViT patches + Faster R-CNN backbone tokens  
+1. **Patch-only (baseline)**  
+   - Original mPLUG captioning: ViT patch tokens only.
+
+2. **Full ROI (features + boxes)**  
+   - Concatenate ROI appearance features and normalized box geometry, then project to hidden size.
+
+3. **Geometry-only ROI**  
+   - Use only normalized box geometry + simple geometric attributes.
+
+4. **RAVLM (Patch + Faster R-CNN features)**  
+   - ViT patch tokens + Faster R-CNN backbone region tokens.  
    - This is the **default and best-performing** variant.
 
 ---
@@ -90,9 +110,9 @@ We evaluate four visual configurations:
 
 - **2025-XX-XX** – Initial public release of RAVLM.  
 - **2025-XX-XX** – Released:
-  - COCO Karpathy **RAVLM checkpoint (XE-only)**  
-  - **Generated captions** on COCO Karpathy test  
-  (see [Model Checkpoint & Outputs](#model-checkpoint--outputs))
+  - COCO Karpathy **RAVLM checkpoint (XE-only)**.  
+  - **Generated captions** on COCO Karpathy test.  
+  See [Model Checkpoint & Outputs](#model-checkpoint--outputs).
 
 ---
 
@@ -106,14 +126,14 @@ All models:
 - Training: **XE-only** (no CIDEr RL)  
 - Pre-training: same **14M-image mPLUG** base
 
-| Visual configuration                    | B@4 | METEOR | CIDEr | SPICE |
-|----------------------------------------|:---:|:------:|:-----:|:-----:|
-| Patch-only (mPLUG baseline)            | 43.1 | 31.4 | 141.0 | 24.2 |
-| Full ROI (features + boxes)            | 43.8 | 31.5 | 147.9 | 24.1 |
-| Geometry-only ROI                      | 44.5 | 31.5 | 149.7 | 24.1 |
+| Visual configuration                    |  B@4 | METEOR | CIDEr | SPICE |
+|----------------------------------------|:----:|:------:|:-----:|:-----:|
+| Patch-only (mPLUG baseline)            | 43.1 |  31.4  | 141.0 | 24.2  |
+| Full ROI (features + boxes)            | 43.8 |  31.5  | 147.9 | 24.1  |
+| Geometry-only ROI                      | 44.5 |  31.5  | 149.7 | 24.1  |
 | **RAVLM (Patch + Faster R-CNN feat.)** | **45.4** | **31.8** | **151.7** | **24.4** |
 
-RAVLM consistently improves over the patch-only mPLUG baseline without RL.
+RAVLM consistently improves over the patch-only mPLUG baseline without any RL / CIDEr optimization.
 
 ---
 
@@ -132,7 +152,7 @@ Recommended:
 git clone https://github.com/alamgirustc/RAVLM.git
 cd RAVLM
 
-# (optional)
+# (optional but recommended)
 conda create -n ravlm python=3.10 -y
 conda activate ravlm
 
