@@ -32,7 +32,7 @@ using **cross-entropy training only** (no CIDEr-based RL), starting from the sam
 6. [Data & Features](#data--features)  
 7. [Training](#training)  
 8. [Evaluation & Inference](#evaluation--inference)  
-9. [Pretrained Models & Outputs](#pretrained-models--outputs)  
+9. [Model Checkpoint & Outputs](#model-checkpoint--outputs)  
 10. [Acknowledgements](#acknowledgements)  
 11. [Citation](#citation)  
 12. [Contact](#contact)
@@ -92,7 +92,7 @@ We evaluate four visual configurations:
 - **2025-XX-XX** – Released:
   - COCO Karpathy **RAVLM checkpoint (XE-only)**  
   - **Generated captions** on COCO Karpathy test  
-  (see [Pretrained Models & Outputs](#pretrained-models--outputs))
+  (see [Model Checkpoint & Outputs](#model-checkpoint--outputs))
 
 ---
 
