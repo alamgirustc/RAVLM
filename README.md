@@ -81,11 +81,9 @@ We follow **Bottom-Up and Top-Down Attention** to extract **Faster R-CNN** regio
 Each descriptor is projected to the **ViT hidden size** and turned into a **region token**.  
 These **region tokens** are concatenated with ViT patch tokens and passed to the unchanged mPLUG fusion network and PrefixLM decoder.
 
-Training uses standard **cross-entropy (XE)**:
+Training uses standard **cross-entropy (XE)**, with loss:
 
-\[
-\mathcal{L}_{\text{CE}} = - \sum_{t=1}^{T} \log p(y_t \mid y_{<t}, I)
-\]
+`L_CE = - ∑_{t=1}^T log p(y_t | y_{<t}, I)`
 
 ### Visual Configurations
 
