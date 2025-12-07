@@ -41,13 +41,13 @@ using **cross-entropy training only** (no CIDEr-based RL), starting from the sam
 
 ## Overview
 
-Most recent image captioning models rely on **ViT patch tokens** and ignore explicit **object-region features**, which can hurt the description of salient entities and relationships in complex scenes.
+Recent image captioning models often rely only on **ViT patch tokens**, ignoring explicit **object-region information**. This can make it harder to describe salient entities and their relationships in complex scenes.
 
-**RAVLM** revisits region-aware modeling and shows that **lightweight detector features** are still complementary to patch-based encoders:
+**RAVLM** revisits region-aware modeling on a modern backbone and shows that **lightweight detector features** are still complementary to patch-based encoders:
 
 - Base model: **mPLUG** (CLIP-ViT + BERT + cross-modal skip-connections + PrefixLM decoder).  
-- Add **Faster R-CNN** region descriptors as extra visual tokens.  
-- Keep the original mPLUG architecture and pre-training; only the **visual inputs** are changed.
+- Extra input: **Faster R-CNN** region descriptors as additional visual tokens.  
+- Architecture and pre-training of mPLUG are unchanged; only the **visual tokens** are modified.
 
 ---
 
@@ -55,14 +55,12 @@ Most recent image captioning models rely on **ViT patch tokens** and ignore expl
 
 ### Base Architecture
 
-We start from the **official mPLUG captioning setup**:
+We start from the official **mPLUG** captioning setup:
 
 - Visual encoder: CLIP-style ViT-B/16 → patch tokens  
 - Text encoder: BERT-base  
 - Fusion: cross-modal skip-connected Transformer  
-- Decoder: Transformer with **PrefixLM** for caption generation  
-
-No change is made to these components.
+- Decoder: Transformer with **Prefix Language Modeling (PrefixLM)** for caption generation  
 
 ### Region Features and Tokens
 
@@ -70,19 +68,19 @@ We follow **Bottom-Up Attention** to extract **Faster R-CNN** region features:
 
 - Up to *K* regions per image  
 - For each region:
-  - ROI appearance vector  
-  - Bounding box (used for normalized geometry)  
+  - ROI appearance feature  
+  - Bounding box (for normalized geometry)  
   - Optionally, backbone region descriptors  
 
-These descriptors are projected to the **ViT hidden size** and added as **region tokens** to the patch sequence. The fused sequence is fed to the existing fusion network and PrefixLM decoder and trained with **cross-entropy (XE)**.
+Region descriptors are projected to the **ViT hidden size** and used as **region tokens**, which are concatenated with patch tokens and fed into the existing fusion network and PrefixLM decoder. Training uses **cross-entropy (XE)** only.
 
 ### Visual Configurations
 
-We evaluate four visual input variants:
+We evaluate four visual configurations:
 
 1. **Patch-only (baseline)** – original mPLUG captioning (ViT patches only)  
-2. **Full ROI (features + boxes)** – concatenate appearance + geometry for each region  
-3. **Geometry-only ROI** – normalized boxes and simple geometry only  
+2. **Full ROI (features + boxes)** – concatenated appearance + geometry per region  
+3. **Geometry-only ROI** – normalized boxes and simple geometric attributes only  
 4. **RAVLM (Patch + Faster R-CNN features)** – ViT patches + Faster R-CNN backbone tokens  
    - This is the **default and best-performing** variant.
 
@@ -115,7 +113,7 @@ All models:
 | Geometry-only ROI                      | 44.5 | 31.5 | 149.7 | 24.1 |
 | **RAVLM (Patch + Faster R-CNN feat.)** | **45.4** | **31.8** | **151.7** | **24.4** |
 
-RAVLM consistently improves over the patch-only mPLUG baseline **without RL**.
+RAVLM consistently improves over the patch-only mPLUG baseline without RL.
 
 ---
 
@@ -125,9 +123,10 @@ RAVLM consistently improves over the patch-only mPLUG baseline **without RL**.
 
 Recommended:
 
+- Linux  
 - Python ≥ 3.8  
 - PyTorch ≥ 1.11 with CUDA  
-- Linux + CUDA GPUs (experiments used **8× Tesla V100 16GB**)
+- CUDA GPUs (paper experiments: **8× Tesla V100 16GB**)
 
 ```bash
 git clone https://github.com/alamgirustc/RAVLM.git
