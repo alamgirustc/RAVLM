@@ -7,8 +7,7 @@ Official PyTorch implementation of:
 > Md Bipul Hossen, Md. Atiqur Rahman, Md Shohidul Islam  
 > \*Equal contribution
 
-RAVLM augments a strong **patch-based** vision–language backbone with **detector-based region features** for image captioning.  
-It is built on top of **mPLUG** and uses **Faster R-CNN region features** generated following the official **Bottom-Up and Top-Down Attention** implementation:
+RAVLM augments a strong **patch-based vision–language backbone** with **detector-based region features** for image captioning. It is implemented on top of **mPLUG** and uses **Faster R-CNN region features** generated following **Bottom-Up and Top-Down Attention**:
 
 - **mPLUG (official repo):** <https://github.com/X-PLUG/mPLUG>  
 - **Bottom-Up Attention (official repo):** <https://github.com/peteanderson80/bottom-up-attention>  
@@ -19,7 +18,7 @@ On **MS COCO (Karpathy split)**, our best configuration (ViT patches + Faster R-
 - **BLEU-4:** 45.4  
 - **CIDEr:** 151.7  
 
-using **only cross-entropy training** (no CIDEr-based reinforcement learning), starting from the same **14M-image pre-training** as mPLUG.
+using **cross-entropy training only** (no CIDEr-based RL), starting from the same **14M-image pre-training** as mPLUG.
 
 ---
 
@@ -42,91 +41,60 @@ using **only cross-entropy training** (no CIDEr-based reinforcement learning), s
 
 ## Overview
 
-Recent vision–language models for image captioning mostly operate on **dense ViT patch tokens** and often discard explicit **object-region information**. This can make it harder to describe salient entities and relationships in complex scenes.
+Most recent image captioning models rely on **ViT patch tokens** and ignore explicit **object-region features**, which can hurt the description of salient entities and relationships in complex scenes.
 
-**RAVLM** revisits region-aware modeling on top of a modern backbone and shows that **lightweight detector features are still complementary** to powerful patch-based encoders:
+**RAVLM** revisits region-aware modeling and shows that **lightweight detector features** are still complementary to patch-based encoders:
 
-- Use **mPLUG** (CLIP-ViT + BERT + cross-modal skip-connections + PrefixLM decoder) as the base vision–language model.  
-- Extract **region features** using a **Faster R-CNN** detector following the **Bottom-Up and Top-Down Attention** (bottom-up attention) pipeline.  
-- Project region descriptors into the same space as ViT patch embeddings and **concatenate region tokens with patch tokens**.  
-- Keep the original **mPLUG pre-training, fusion network, and decoder unchanged** – only the visual tokens are modified.
-
-We systematically study several ways to inject region information and find that **Faster R-CNN backbone tokens** yield the strongest gains over a patch-only baseline, while remaining efficient and easy to plug into existing pipelines.
+- Base model: **mPLUG** (CLIP-ViT + BERT + cross-modal skip-connections + PrefixLM decoder).  
+- Add **Faster R-CNN** region descriptors as extra visual tokens.  
+- Keep the original mPLUG architecture and pre-training; only the **visual inputs** are changed.
 
 ---
 
 ## Method
 
-### Base Architecture: mPLUG Captioning
+### Base Architecture
 
-RAVLM starts from the official **mPLUG** captioning setup:
+We start from the **official mPLUG captioning setup**:
 
-- **Visual encoder:** CLIP-style ViT-B/16, producing a sequence of patch tokens  
-  `V = {v_cls, v_1, ..., v_M}`  
-- **Text encoder:** BERT-base, producing token representations  
-  `L = {l_cls, l_1, ..., l_N}`  
-- **Fusion:** cross-modal skip-connected Transformer network  
-- **Decoder:** Transformer with **Prefix Language Modeling (PrefixLM)** objective for caption generation  
+- Visual encoder: CLIP-style ViT-B/16 → patch tokens  
+- Text encoder: BERT-base  
+- Fusion: cross-modal skip-connected Transformer  
+- Decoder: Transformer with **PrefixLM** for caption generation  
 
-We **do not modify** these components; we only augment the **visual input**.
+No change is made to these components.
 
-### Region Feature Extraction
+### Region Features and Tokens
 
-For each image, we run a **Faster R-CNN** detector (as in **Bottom-Up and Top-Down Attention**):
+We follow **Bottom-Up Attention** to extract **Faster R-CNN** region features:
 
-- Up to **K** detected regions per image  
-- For each region *i*:
-  - ROI **appearance feature** `f_i ∈ R^{d_det}`
-  - Bounding box `(x_min, y_min, x_max, y_max)` used to derive normalized **geometry** `g_i` (coordinates, width, height, area)
+- Up to *K* regions per image  
+- For each region:
+  - ROI appearance vector  
+  - Bounding box (used for normalized geometry)  
+  - Optionally, backbone region descriptors  
 
-In some variants we also use **Faster R-CNN backbone features** `\tilde{f}_i` as additional region descriptors.
-
-### Region Tokens & Visual Sequence
-
-We project region descriptors into the **ViT hidden dimension** and turn them into **region tokens**:
-
-- **Appearance-only (Patch + ROI features)**  
-  `r_i^feat = W_feat f_i + b_feat`
-- **Geometry-only (Patch + ROI boxes)**  
-  `r_i^box = W_box g_i + b_box`
-- **Full ROI (features + boxes)**  
-  `r_i^full = W_full [f_i ; g_i] + b_full`
-- **Faster R-CNN backbone tokens (RAVLM)**  
-  `r_i^rcnn = W_rcnn \tilde{f}_i + b_rcnn`
-
-These tokens are **concatenated** with ViT patch tokens:
-
-`V_hat = {v_cls, v_1, ..., v_M, r_1, ..., r_K}`
-
-The fused sequence `V_hat` is fed into the **unchanged mPLUG fusion network and PrefixLM decoder**.
-
-Training uses **cross-entropy (XE)** only:
-
-`L_CE = - Σ_t log p(y_t | y_<t, I)`
+These descriptors are projected to the **ViT hidden size** and added as **region tokens** to the patch sequence. The fused sequence is fed to the existing fusion network and PrefixLM decoder and trained with **cross-entropy (XE)**.
 
 ### Visual Configurations
 
-We evaluate four visual configurations:
+We evaluate four visual input variants:
 
-1. **Patch-only (baseline)**  
-   - Original mPLUG captioning setup (ViT patches only).
-
-2. **Full ROI (features + boxes)**  
-   - For each region, concatenate ROI appearance features and normalized geometry, project, and append as region tokens.
-
-3. **Geometry-only ROI**  
-   - Use only normalized box geometry (coordinates, width, height, area), project, and append as region tokens.
-
-4. **RAVLM (Patch + Faster R-CNN features)**  
-   - ViT patch tokens + region tokens derived from Faster R-CNN backbone features (no explicit concatenation of appearance + geometry).  
-   - This is the **default and best-performing** configuration.
+1. **Patch-only (baseline)** – original mPLUG captioning (ViT patches only)  
+2. **Full ROI (features + boxes)** – concatenate appearance + geometry for each region  
+3. **Geometry-only ROI** – normalized boxes and simple geometry only  
+4. **RAVLM (Patch + Faster R-CNN features)** – ViT patches + Faster R-CNN backbone tokens  
+   - This is the **default and best-performing** variant.
 
 ---
 
 ## News
 
 - **2025-XX-XX** – Initial public release of RAVLM.  
-- **2025-XX-XX** – Release of COCO/Karpathy pretrained checkpoint and generated-caption files.
+- **2025-XX-XX** – Released:
+  - COCO Karpathy **RAVLM checkpoint (XE-only)**  
+  - **Generated captions** on COCO Karpathy test  
+  (see [Pretrained Models & Outputs](#pretrained-models--outputs))
 
 ---
 
@@ -134,9 +102,11 @@ We evaluate four visual configurations:
 
 ### COCO Captioning (Karpathy Test, XE Only)
 
-All models are trained on the **COCO Karpathy split**, with **cross-entropy only** (no CIDEr RL), using the same **mPLUG 14M-image pre-training**.
+All models:
 
-**Ablation over visual configurations:**
+- Dataset: **MS COCO**, **Karpathy split**  
+- Training: **XE-only** (no CIDEr RL)  
+- Pre-training: same **14M-image mPLUG** base
 
 | Visual configuration                    | B@4 | METEOR | CIDEr | SPICE |
 |----------------------------------------|:---:|:------:|:-----:|:-----:|
@@ -145,27 +115,26 @@ All models are trained on the **COCO Karpathy split**, with **cross-entropy only
 | Geometry-only ROI                      | 44.5 | 31.5 | 149.7 | 24.1 |
 | **RAVLM (Patch + Faster R-CNN feat.)** | **45.4** | **31.8** | **151.7** | **24.4** |
 
-RAVLM consistently improves over the strong patch-only baseline **without any RL / CIDEr optimization**.
+RAVLM consistently improves over the patch-only mPLUG baseline **without RL**.
 
 ---
 
 ## Installation
 
-### 1. Environment
+### Environment
 
-We recommend:
+Recommended:
 
 - Python ≥ 3.8  
 - PyTorch ≥ 1.11 with CUDA  
-- Linux + CUDA-compatible GPUs (experiments used **8× Tesla V100 16GB**)
+- Linux + CUDA GPUs (experiments used **8× Tesla V100 16GB**)
 
 ```bash
 git clone https://github.com/alamgirustc/RAVLM.git
 cd RAVLM
 
-# (Optional but recommended)
+# (optional)
 conda create -n ravlm python=3.10 -y
 conda activate ravlm
 
-# Install Python dependencies
 pip install -r requirements.txt
